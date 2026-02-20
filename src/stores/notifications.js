@@ -36,6 +36,7 @@ export const useNotificationStore = defineStore('notifications', () => {
       const n = notifications.value.find((n) => n.id === id)
       if (n) n.is_read = true
       unreadCount.value = Math.max(0, unreadCount.value - 1)
+      await fetchUnreadCount()
     } catch (err) {
       console.error('[Notifications] markRead failed:', err)
     }
@@ -46,6 +47,7 @@ export const useNotificationStore = defineStore('notifications', () => {
       await notificationService.markAllRead()
       notifications.value.forEach((n) => (n.is_read = true))
       unreadCount.value = 0
+      await fetchUnreadCount()
     } catch (err) {
       console.error('[Notifications] markAllRead failed:', err)
     }
@@ -61,6 +63,7 @@ export const useNotificationStore = defineStore('notifications', () => {
         }
         notifications.value.splice(idx, 1)
       }
+      await fetchUnreadCount()
     } catch (err) {
       console.error('[Notifications] remove failed:', err)
     }
