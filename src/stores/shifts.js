@@ -16,6 +16,19 @@ export const useShiftStore = defineStore('shifts', () => {
   const shiftCount = computed(() => shifts.value.length)
   const isClockedIn = computed(() => !!activeShift.value)
 
+  /**
+   * Next planned shift for the given user (start_time >= now), or null.
+   * Used to suggest a project when clocking in.
+   */
+  function getSuggestedClockInShift(userId) {
+    if (!userId) return null
+    const now = new Date()
+    const upcoming = shifts.value
+      .filter((s) => s.user_id === userId && new Date(s.start_time) >= now)
+      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+    return upcoming[0] || null
+  }
+
   async function fetchShifts() {
     loading.value = true
     try {
@@ -98,13 +111,20 @@ export const useShiftStore = defineStore('shifts', () => {
     loading.value = true
     try {
       clockSessions.value = await shiftService.listClockSessions(params)
+      syncActiveShiftFromSessions()
     } catch (err) {
       const toast = useToastStore()
       toast.error(err.response?.data?.detail || 'Failed to load clock sessions')
       clockSessions.value = []
+      activeShift.value = null
     } finally {
       loading.value = false
     }
+  }
+
+  function syncActiveShiftFromSessions() {
+    const inProgress = clockSessions.value.find((s) => !s.end_time)
+    activeShift.value = inProgress || null
   }
 
   async function fetchActiveShift(userId) {
@@ -141,7 +161,7 @@ export const useShiftStore = defineStore('shifts', () => {
       const session = await shiftService.clockOut({ user_id: userId })
       const idx = clockSessions.value.findIndex((s) => s.id === session.id)
       if (idx !== -1) clockSessions.value[idx] = session
-      activeShift.value = null
+      syncActiveShiftFromSessions()
       toast.success('Clocked out successfully')
       return session
     } catch (err) {
@@ -162,6 +182,7 @@ export const useShiftStore = defineStore('shifts', () => {
     clockLoading,
     shiftCount,
     isClockedIn,
+    getSuggestedClockInShift,
     fetchShifts,
     fetchClockSessions,
     fetchProjects,

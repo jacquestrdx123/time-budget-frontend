@@ -39,6 +39,12 @@
               <div>
                 <div class="clock-idle-title">Ready to start?</div>
                 <div class="clock-idle-sub">Select a {{ settingsStore.projectDescription.toLowerCase() }} and clock in to begin tracking.</div>
+                <div v-if="suggestedShift" class="clock-suggestion">
+                  <span class="clock-suggestion-label">Suggested:</span>
+                  <span class="clock-suggestion-project">{{ projectName(suggestedShift.project_id) }}</span>
+                  <span class="clock-suggestion-time">(planned {{ formatDateTime(suggestedShift.start_time) }})</span>
+                  <button type="button" class="clock-suggestion-use" @click="useSuggestedProject">Use</button>
+                </div>
               </div>
             </div>
             <div class="clock-idle-actions">
@@ -112,7 +118,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useShiftStore } from '@/stores/shifts'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
@@ -133,7 +139,7 @@ export default {
       await Promise.all([
         shiftStore.fetchClockSessions(),
         shiftStore.fetchProjects(),
-        authStore.user?.id ? shiftStore.fetchActiveShift(authStore.user.id) : Promise.resolve(),
+        shiftStore.fetchShifts(),
       ])
       ticker = setInterval(() => {
         now.value = new Date()
@@ -197,6 +203,20 @@ export default {
       return formatMs(ms)
     })
 
+    const suggestedShift = computed(() => shiftStore.getSuggestedClockInShift(authStore.user?.id))
+
+    watch(suggestedShift, (next) => {
+      if (next?.project_id && !clockInProjectId.value) {
+        clockInProjectId.value = next.project_id
+      }
+    }, { immediate: true })
+
+    function useSuggestedProject() {
+      if (suggestedShift.value?.project_id) {
+        clockInProjectId.value = suggestedShift.value.project_id
+      }
+    }
+
     async function handleClockIn() {
       if (!clockInProjectId.value || !authStore.user?.id) return
       await shiftStore.clockIn(authStore.user.id, clockInProjectId.value)
@@ -214,6 +234,8 @@ export default {
       clockInProjectId,
       elapsedTime,
       now,
+      suggestedShift,
+      useSuggestedProject,
       projectName,
       formatDateTime,
       formatDate,
@@ -428,6 +450,37 @@ export default {
   font-size: 0.82rem;
   color: #94a3b8;
   margin-top: 0.15rem;
+}
+
+.clock-suggestion {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.clock-suggestion-label { color: #94a3b8; }
+
+.clock-suggestion-project { font-weight: 600; color: #93c5fd; }
+
+.clock-suggestion-time { color: #64748b; font-size: 0.8rem; }
+
+.clock-suggestion-use {
+  margin-left: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.clock-suggestion-use:hover {
+  border-color: #60a5fa;
+  color: #60a5fa;
 }
 
 .clock-idle-actions {
