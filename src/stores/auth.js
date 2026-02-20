@@ -26,14 +26,18 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('user')
   }
 
-  async function register(name, email, password) {
+  async function register(name, email, password, tenantName) {
     const toast = useToastStore()
     loading.value = true
     try {
-      const data = await authService.register(name, email, password)
-      setSession(data.access_token, data.user)
-      toast.success(`Welcome, ${data.user.name}!`)
-      return true
+      const data = await authService.register(name, email, password, tenantName)
+      if (data.access_token && data.user) {
+        setSession(data.access_token, data.user)
+        toast.success(`Welcome, ${data.user.name}!`)
+        return 'logged_in'
+      }
+      toast.success(data.message || 'Account created. Please wait for your admin to activate your account.')
+      return 'pending_approval'
     } catch (err) {
       const msg = err.response?.data?.detail || 'Registration failed'
       toast.error(msg)

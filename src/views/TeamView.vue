@@ -35,7 +35,7 @@
         Loading team schedule...
       </div>
 
-      <div v-else-if="users.length === 0" class="empty-state">
+      <div v-else-if="displayUsers.length === 0" class="empty-state">
         <h3>No team members</h3>
         <p>No users have been registered yet.</p>
       </div>
@@ -55,7 +55,7 @@
         </div>
 
         <div
-          v-for="user in users"
+          v-for="user in displayUsers"
           :key="user.id"
           class="user-row"
         >
@@ -102,7 +102,7 @@
         </div>
 
         <div
-          v-for="user in users"
+          v-for="user in displayUsers"
           :key="user.id"
           class="user-row-week"
         >
@@ -207,6 +207,7 @@ export default {
     const viewMode = ref('day')
     const selectedDate = ref(stripTime(new Date()))
     const users = ref([])
+    const displayUsers = computed(() => users.value.filter(u => u.is_active !== false))
     const shifts = ref([])
     const projectList = ref([])
     const loading = ref(true)
@@ -391,7 +392,7 @@ export default {
 
     function teamDayTotal(dayKey) {
       return round(
-        users.value.reduce((sum, u) => sum + userDayTotal(u.id, dayKey), 0)
+        displayUsers.value.reduce((sum, u) => sum + userDayTotal(u.id, dayKey), 0)
       )
     }
 
@@ -432,6 +433,7 @@ export default {
       viewMode,
       selectedDate,
       users,
+      displayUsers,
       shifts,
       projectList,
       loading,

@@ -8,6 +8,18 @@
 
       <form @submit.prevent="handleRegister" class="auth-form">
         <div class="form-group">
+          <label for="tenantName">Organization / Team name</label>
+          <input
+            id="tenantName"
+            v-model="tenantName"
+            type="text"
+            placeholder="Enter your organization or team name"
+            required
+            :disabled="auth.loading"
+          />
+        </div>
+
+        <div class="form-group">
           <label for="name">Full Name</label>
           <input
             id="name"
@@ -83,6 +95,7 @@ export default {
     const toast = useToastStore()
     const router = useRouter()
 
+    const tenantName = ref('')
     const name = ref('')
     const email = ref('')
     const password = ref('')
@@ -99,13 +112,15 @@ export default {
         return
       }
 
-      const success = await auth.register(name.value, email.value, password.value)
-      if (success) {
+      const result = await auth.register(name.value, email.value, password.value, tenantName.value.trim())
+      if (result === 'logged_in') {
         router.push('/')
+      } else if (result === 'pending_approval') {
+        router.push('/login')
       }
     }
 
-    return { auth, name, email, password, confirmPassword, handleRegister }
+    return { auth, tenantName, name, email, password, confirmPassword, handleRegister }
   },
 }
 </script>

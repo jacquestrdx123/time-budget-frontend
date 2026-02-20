@@ -32,6 +32,7 @@
               <th>Name</th>
               <th>Email</th>
               <th>Role</th>
+              <th>Status</th>
               <th class="th-actions">Actions</th>
             </tr>
           </thead>
@@ -45,7 +46,19 @@
               <td>
                 <span class="role-badge" :class="u.role">{{ u.role }}</span>
               </td>
+              <td>
+                <span class="status-badge" :class="u.is_active ? 'active' : 'pending'">
+                  {{ u.is_active !== false ? 'Active' : 'Pending' }}
+                </span>
+              </td>
               <td class="td-actions">
+                <button
+                  v-if="auth.isAdmin && !u.is_active"
+                  class="btn-icon btn-activate"
+                  title="Activate"
+                  :disabled="activatingId === u.id"
+                  @click="activateUser(u)"
+                >{{ activatingId === u.id ? 'Activating...' : 'Activate' }}</button>
                 <button
                   v-if="canEdit(u)"
                   class="btn-icon"
@@ -166,6 +179,7 @@ export default {
 
     const addForm = ref({ name: '', email: '', password: '' })
     const editForm = ref({ id: null, name: '', email: '', role: 'member' })
+    const activatingId = ref(null)
 
     function initials(name) {
       if (!name) return ''
@@ -198,6 +212,20 @@ export default {
     function openEditModal(u) {
       editForm.value = { id: u.id, name: u.name, email: u.email, role: u.role || 'member' }
       showEditModal.value = true
+    }
+
+    async function activateUser(u) {
+      activatingId.value = u.id
+      try {
+        await userService.update(u.id, { is_active: true })
+        toast.success(`${u.name} has been activated`)
+        await loadUsers()
+      } catch (err) {
+        const msg = err.response?.data?.detail || 'Failed to activate user'
+        toast.error(msg)
+      } finally {
+        activatingId.value = null
+      }
     }
 
     async function loadUsers() {
@@ -289,11 +317,13 @@ export default {
       editSaving,
       deleteSaving,
       userToDelete,
+      activatingId,
       initials,
       canEdit,
       canDelete,
       openAddModal,
       openEditModal,
+      activateUser,
       confirmDelete,
       submitAdd,
       submitEdit,
@@ -456,6 +486,30 @@ export default {
 .role-badge.member {
   background: rgba(148, 163, 184, 0.2);
   color: #94a3b8;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.status-badge.pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.btn-icon.btn-activate:hover:not(:disabled) {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #34d399;
 }
 
 .th-actions,
