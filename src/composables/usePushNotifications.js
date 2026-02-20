@@ -25,28 +25,24 @@ export function usePushNotifications() {
   const fcmToken = ref(null)
 
   /**
-   * Request permission, get FCM token, register with backend, listen for
-   * foreground messages.
+   * Get FCM token, register with backend, and listen for foreground messages.
+   * Only runs if permission is already granted. Does NOT request permission
+   * (so safe to call on app load without a user gesture).
    */
   async function initPush() {
     if (!pushSupported.value) {
       console.info('[Push] Not supported or Firebase not configured')
       return
     }
+    if (Notification.permission !== 'granted') {
+      return
+    }
+    permissionGranted.value = true
 
     const toast = useToastStore()
     const notifStore = useNotificationStore()
 
     try {
-      const permission = await Notification.requestPermission()
-      permissionGranted.value = permission === 'granted'
-
-      if (!permissionGranted.value) {
-        console.info('[Push] Permission denied')
-        return
-      }
-
-      // Wait for the PWA service worker (which includes Firebase messaging)
       const registration = await navigator.serviceWorker.ready
 
       const token = await getToken(messaging, {
@@ -78,10 +74,31 @@ export function usePushNotifications() {
     }
   }
 
+  /**
+   * Request notification permission (must be called in response to a user gesture),
+   * then get token and set up listeners. Use this for the "Enable push" button only.
+   */
+  async function requestPermissionAndInit() {
+    if (!pushSupported.value) {
+      console.info('[Push] Not supported or Firebase not configured')
+      return
+    }
+    try {
+      const permission = await Notification.requestPermission()
+      permissionGranted.value = permission === 'granted'
+      if (permissionGranted.value) {
+        await initPush()
+      }
+    } catch (err) {
+      console.error('[Push] requestPermission failed:', err)
+    }
+  }
+
   return {
     permissionGranted,
     pushSupported,
     fcmToken,
     initPush,
+    requestPermissionAndInit,
   }
 }

@@ -1,161 +1,179 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+/**
+ * Lazy-load a view. On chunk load failure (e.g. after deploy, old chunk gone),
+ * reload the page so the user gets the new assets.
+ */
+function lazyLoad(importFn) {
+  return () =>
+    importFn().catch((err) => {
+      const isChunkLoadError =
+        err?.message?.includes('Failed to fetch dynamically imported module') ||
+        err?.name === 'ChunkLoadError'
+      if (isChunkLoadError) {
+        window.location.reload()
+        return
+      }
+      throw err
+    })
+}
+
 const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/LoginView.vue'),
+    component: lazyLoad(() => import('@/views/LoginView.vue')),
     meta: { guest: true },
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/RegisterView.vue'),
+    component: lazyLoad(() => import('@/views/RegisterView.vue')),
     meta: { guest: true },
   },
   {
     path: '/',
     name: 'Dashboard',
-    component: () => import('@/views/DashboardView.vue'),
+    component: lazyLoad(() => import('@/views/DashboardView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/projects',
     name: 'Projects',
-    component: () => import('@/views/ProjectsView.vue'),
+    component: lazyLoad(() => import('@/views/ProjectsView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/projects/new',
     name: 'ProjectCreate',
-    component: () => import('@/views/ProjectFormView.vue'),
+    component: lazyLoad(() => import('@/views/ProjectFormView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/projects/:id',
     name: 'ProjectShow',
-    component: () => import('@/views/ProjectShowView.vue'),
+    component: lazyLoad(() => import('@/views/ProjectShowView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/projects/:id/edit',
     name: 'ProjectEdit',
-    component: () => import('@/views/ProjectFormView.vue'),
+    component: lazyLoad(() => import('@/views/ProjectFormView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/tasks',
     name: 'Tasks',
-    component: () => import('@/views/TasksView.vue'),
+    component: lazyLoad(() => import('@/views/TasksView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/tasks/create',
     name: 'TaskCreate',
-    component: () => import('@/views/TaskCreateView.vue'),
+    component: lazyLoad(() => import('@/views/TaskCreateView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/tasks/:id/edit',
     name: 'TaskEdit',
-    component: () => import('@/views/TaskEditView.vue'),
+    component: lazyLoad(() => import('@/views/TaskEditView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/personal-todos',
     name: 'PersonalTodos',
-    component: () => import('@/views/PersonalTodosView.vue'),
+    component: lazyLoad(() => import('@/views/PersonalTodosView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/personal-todos/create',
     name: 'PersonalTodoCreate',
-    component: () => import('@/views/PersonalTodoCreateView.vue'),
+    component: lazyLoad(() => import('@/views/PersonalTodoCreateView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/personal-todos/:id/edit',
     name: 'PersonalTodoEdit',
-    component: () => import('@/views/PersonalTodoEditView.vue'),
+    component: lazyLoad(() => import('@/views/PersonalTodoEditView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/planner',
     name: 'Planner',
-    component: () => import('@/views/PlannerView.vue'),
+    component: lazyLoad(() => import('@/views/PlannerView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/timeline',
     name: 'Timeline',
-    component: () => import('@/views/TimelineView.vue'),
+    component: lazyLoad(() => import('@/views/TimelineView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/team',
     name: 'Team',
-    component: () => import('@/views/TeamView.vue'),
+    component: lazyLoad(() => import('@/views/TeamView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/team/members',
     name: 'TeamMembers',
-    component: () => import('@/views/TeamMembersView.vue'),
+    component: lazyLoad(() => import('@/views/TeamMembersView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/shifts',
     name: 'Shifts',
-    component: () => import('@/views/ShiftsView.vue'),
+    component: lazyLoad(() => import('@/views/ShiftsView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/shifts/create',
     name: 'ShiftCreate',
-    component: () => import('@/views/ShiftCreateView.vue'),
+    component: lazyLoad(() => import('@/views/ShiftCreateView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/shifts/:id/edit',
     name: 'ShiftEdit',
-    component: () => import('@/views/ShiftEditView.vue'),
+    component: lazyLoad(() => import('@/views/ShiftEditView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/reminders',
     name: 'Reminders',
-    component: () => import('@/views/RemindersView.vue'),
+    component: lazyLoad(() => import('@/views/RemindersView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/reminders/create',
     name: 'ReminderCreate',
-    component: () => import('@/views/ReminderCreateView.vue'),
+    component: lazyLoad(() => import('@/views/ReminderCreateView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/reminders/:id/edit',
     name: 'ReminderEdit',
-    component: () => import('@/views/ReminderEditView.vue'),
+    component: lazyLoad(() => import('@/views/ReminderEditView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/notifications',
     name: 'Notifications',
-    component: () => import('@/views/NotificationsView.vue'),
+    component: lazyLoad(() => import('@/views/NotificationsView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/notifications/preferences',
     name: 'NotificationPreferences',
-    component: () => import('@/views/NotificationPreferencesView.vue'),
+    component: lazyLoad(() => import('@/views/NotificationPreferencesView.vue')),
     meta: { requiresAuth: true },
   },
   {
     path: '/settings',
     name: 'Settings',
-    component: () => import('@/views/SettingsView.vue'),
+    component: lazyLoad(() => import('@/views/SettingsView.vue')),
     meta: { requiresAuth: true },
   },
 ]

@@ -150,7 +150,7 @@ export default {
     const notifStore = useNotificationStore()
     const settingsStore = useSettingsStore()
     const toast = useToastStore()
-    const { permissionGranted, pushSupported, initPush } = usePushNotifications()
+    const { permissionGranted, pushSupported, requestPermissionAndInit } = usePushNotifications()
     const prefs = ref(null)
 
     onMounted(async () => {
@@ -164,7 +164,7 @@ export default {
     }
 
     async function requestPush() {
-      await initPush()
+      await requestPermissionAndInit()
       if (permissionGranted.value) {
         toast.success('Push notifications enabled!')
       } else {
