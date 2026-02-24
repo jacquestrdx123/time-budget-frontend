@@ -122,6 +122,34 @@ export const useShiftStore = defineStore('shifts', () => {
     }
   }
 
+  async function getClockSession(id) {
+    try {
+      return await shiftService.getClockSession(id)
+    } catch (err) {
+      const toast = useToastStore()
+      toast.error(err.response?.data?.detail || 'Failed to load clock session')
+      return null
+    }
+  }
+
+  async function updateClockSession(id, data) {
+    const toast = useToastStore()
+    saving.value = true
+    try {
+      const updated = await shiftService.updateClockSession(id, data)
+      const idx = clockSessions.value.findIndex((s) => s.id === id)
+      if (idx !== -1) clockSessions.value[idx] = updated
+      syncActiveClockSessionFromSessions()
+      toast.success('Clock in updated')
+      return updated
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update clock in')
+      return null
+    } finally {
+      saving.value = false
+    }
+  }
+
   function syncActiveClockSessionFromSessions() {
     const inProgress = clockSessions.value.find((s) => !s.end_time)
     activeClockSession.value = inProgress || null
@@ -191,6 +219,8 @@ export const useShiftStore = defineStore('shifts', () => {
     createShift,
     updateShift,
     deleteShift,
+    getClockSession,
+    updateClockSession,
     fetchActiveClockSession,
     clockIn,
     clockOut,

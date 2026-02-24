@@ -84,6 +84,7 @@
               <th>End</th>
               <th>Duration</th>
               <th>Planned</th>
+              <th v-if="authStore.isAdmin" class="th-actions">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -107,9 +108,57 @@
                 <router-link v-if="session.shift_id" :to="`/shifts/${session.shift_id}/edit`" class="project-link">Shift #{{ session.shift_id }}</router-link>
                 <span v-else class="text-muted">—</span>
               </td>
+              <td v-if="authStore.isAdmin" class="td-actions">
+                <button type="button" class="btn-icon" title="Edit clock in" @click="openEditModal(session)">&#9998;</button>
+              </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Edit clock in modal (admin only) -->
+      <div v-if="editSession" class="modal-overlay" @click.self="editSession = null">
+        <div class="modal-card modal-card--wide">
+          <h3>Edit clock in</h3>
+          <form v-if="editForm" class="edit-form" @submit.prevent="handleSaveEdit">
+            <div class="form-group">
+              <label for="edit-project">{{ settingsStore.projectDescription }}</label>
+              <select id="edit-project" v-model="editForm.project_id" required :disabled="shiftStore.saving">
+                <option value="" disabled>Select {{ settingsStore.projectDescription.toLowerCase() }}...</option>
+                <option v-for="p in shiftStore.projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="edit-clock-in">Clocked in at</label>
+                <input
+                  id="edit-clock-in"
+                  v-model="editForm.clocked_in_at"
+                  type="datetime-local"
+                  required
+                  :disabled="shiftStore.saving"
+                />
+              </div>
+              <div class="form-group">
+                <label for="edit-clock-out">Clocked out at</label>
+                <input
+                  id="edit-clock-out"
+                  v-model="editForm.clocked_out_at"
+                  type="datetime-local"
+                  :disabled="shiftStore.saving"
+                  :title="editSession && !editSession.end_time ? 'Leave empty for in progress' : ''"
+                />
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" @click="editSession = null">Cancel</button>
+              <button type="submit" class="btn-primary" :disabled="shiftStore.saving">
+                <span v-if="shiftStore.saving" class="spinner spinner-sm"></span>
+                {{ shiftStore.saving ? 'Saving...' : 'Save' }}
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </main>
   </div>
@@ -131,7 +180,40 @@ export default {
     const settingsStore = useSettingsStore()
     const clockInProjectId = ref('')
     const now = ref(new Date())
+    const editSession = ref(null)
+    const editForm = ref(null)
     let ticker = null
+
+    function toLocalDatetime(isoStr) {
+      if (!isoStr) return ''
+      const d = new Date(isoStr)
+      const pad = (n) => String(n).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
+
+    function openEditModal(session) {
+      editSession.value = session
+      editForm.value = {
+        project_id: session.project_id || '',
+        clocked_in_at: toLocalDatetime(session.clocked_in_at || session.start_time),
+        clocked_out_at: session.end_time || session.clocked_out_at ? toLocalDatetime(session.clocked_out_at || session.end_time) : '',
+      }
+    }
+
+    async function handleSaveEdit() {
+      if (!editForm.value || !editSession.value) return
+      const payload = {
+        project_id: editForm.value.project_id ? Number(editForm.value.project_id) : null,
+        clocked_in_at: editForm.value.clocked_in_at ? new Date(editForm.value.clocked_in_at).toISOString() : undefined,
+        clocked_out_at: editForm.value.clocked_out_at ? new Date(editForm.value.clocked_out_at).toISOString() : null,
+      }
+      if (!editForm.value.clocked_out_at) payload.clocked_out_at = null
+      const updated = await shiftStore.updateClockSession(editSession.value.id, payload)
+      if (updated) {
+        editSession.value = null
+        editForm.value = null
+      }
+    }
 
     onMounted(async () => {
       await Promise.all([
@@ -219,12 +301,17 @@ export default {
 
     return {
       shiftStore,
+      authStore,
       settingsStore,
       clockInProjectId,
       elapsedTime,
       now,
+      editSession,
+      editForm,
       suggestedShift,
       useSuggestedProject,
+      openEditModal,
+      handleSaveEdit,
       projectName,
       formatDateTime,
       formatDuration,
@@ -601,6 +688,150 @@ export default {
   font-weight: 500;
   color: #34d399;
   background: rgba(52, 211, 153, 0.1);
+}
+
+.th-actions {
+  text-align: right;
+}
+
+.td-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: transparent;
+  border: 1px solid #334155;
+  border-radius: 6px;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-card {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+}
+
+.modal-card--wide {
+  max-width: 480px;
+}
+
+.modal-card h3 {
+  color: #f1f5f9;
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.edit-form .form-group {
+  margin-bottom: 1rem;
+}
+
+.edit-form .form-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.edit-form .form-row .form-group {
+  flex: 1;
+  min-width: 140px;
+}
+
+.edit-form label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+}
+
+.edit-form select,
+.edit-form input[type="datetime-local"] {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.edit-form select:focus,
+.edit-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+.btn-primary {
+  padding: 0.55rem 1rem;
+  background: #3b82f6;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  padding: 0.55rem 1rem;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #334155;
+  color: #f1f5f9;
 }
 
 .spinner {

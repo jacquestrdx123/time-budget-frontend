@@ -44,4 +44,14 @@ export const shiftService = {
     const response = await api.get('/clock-sessions/', { params })
     return response.data
   },
+
+  async getClockSession(id) {
+    const response = await api.get(`/clock-sessions/${id}`)
+    return response.data
+  },
+
+  async updateClockSession(id, data) {
+    const response = await api.patch(`/clock-sessions/${id}`, data)
+    return response.data
+  },
 }
