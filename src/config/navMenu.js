@@ -22,6 +22,7 @@ export const baseNavGroups = [
       { label: 'Team Schedule', to: '/team' },
       { label: 'Team Members', to: '/team/members' },
       { label: 'Shifts', to: '/shifts' },
+      { label: 'Clock ins', to: '/clock-ins' },
       { label: 'Reminders', to: '/reminders' },
     ],
   },

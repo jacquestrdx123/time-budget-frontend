@@ -129,6 +129,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/clock-ins',
+    name: 'ClockIns',
+    component: lazyLoad(() => import('@/views/ClockInsView.vue')),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/shifts/create',
     name: 'ShiftCreate',
     component: lazyLoad(() => import('@/views/ShiftCreateView.vue')),

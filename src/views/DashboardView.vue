@@ -15,9 +15,9 @@
             <span class="clock-label">Clocked In</span>
           </div>
           <div class="clock-details">
-            <span class="clock-project">{{ projectName(shiftStore.activeShift?.project_id) }}</span>
+            <span class="clock-project">{{ projectName(shiftStore.activeClockSession?.project_id) }}</span>
             <span class="clock-separator">&#183;</span>
-            <span class="clock-started">Started {{ formatDateTime(shiftStore.activeShift?.start_time) }}</span>
+            <span class="clock-started">Started {{ formatDateTime(shiftStore.activeClockSession?.start_time) }}</span>
           </div>
           <div class="clock-elapsed">{{ elapsedTime }}</div>
           <button
@@ -104,7 +104,7 @@
       <div class="shifts-section">
         <div class="shifts-section-header">
           <h3>Recent clock sessions</h3>
-          <router-link to="/shifts" class="btn-secondary btn-sm">View all</router-link>
+          <router-link to="/clock-ins" class="btn-secondary btn-sm">View all</router-link>
         </div>
         <div v-if="shiftStore.loading && shiftStore.clockSessions.length === 0" class="loading-inline">
           <span class="spinner"></span> Loading...
@@ -255,8 +255,8 @@ export default {
     }
 
     const elapsedTime = computed(() => {
-      if (!shiftStore.activeShift?.start_time) return '0s'
-      return formatMs(now.value - new Date(shiftStore.activeShift.start_time))
+      if (!shiftStore.activeClockSession?.start_time) return '0s'
+      return formatMs(now.value - new Date(shiftStore.activeClockSession.start_time))
     })
 
     const recentSessions = computed(() => shiftStore.clockSessions.slice(0, 5))
