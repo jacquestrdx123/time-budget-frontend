@@ -31,6 +31,10 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     try {
       const data = await authService.register(name, email, password, tenantName)
+      if (data.code === 'domain_exists_request_sent') {
+        toast.success(data.message || 'Your domain is already associated with an organization. We\'ve notified the admins. You can sign in once they approve your request.')
+        return 'domain_exists_request_sent'
+      }
       if (data.access_token && data.user) {
         setSession(data.access_token, data.user)
         toast.success(`Welcome, ${data.user.name}!`)

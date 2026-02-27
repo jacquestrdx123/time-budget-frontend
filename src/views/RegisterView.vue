@@ -6,7 +6,7 @@
         <p>Create your account</p>
       </div>
 
-      <form @submit.prevent="handleRegister" class="auth-form">
+      <form v-if="!requestSent" @submit.prevent="handleRegister" class="auth-form">
         <div class="form-group">
           <label for="tenantName">Organization / Team name</label>
           <input
@@ -68,13 +68,18 @@
           />
         </div>
 
-        <button type="submit" class="btn-primary" :disabled="auth.loading">
+        <button v-if="!requestSent" type="submit" class="btn-primary" :disabled="auth.loading">
           <span v-if="auth.loading" class="spinner"></span>
           {{ auth.loading ? 'Creating account...' : 'Create Account' }}
         </button>
       </form>
 
-      <p class="auth-footer">
+      <div v-if="requestSent" class="request-sent-message">
+        <p>Your domain is already associated with an organization. We've notified the admins. You can sign in once they approve your request.</p>
+        <router-link to="/login" class="btn-primary">Go to Sign in</router-link>
+      </div>
+
+      <p v-if="!requestSent" class="auth-footer">
         Already have an account?
         <router-link to="/login">Sign in</router-link>
       </p>
@@ -100,6 +105,7 @@ export default {
     const email = ref('')
     const password = ref('')
     const confirmPassword = ref('')
+    const requestSent = ref(false)
 
     async function handleRegister() {
       if (password.value !== confirmPassword.value) {
@@ -117,10 +123,12 @@ export default {
         router.push('/')
       } else if (result === 'pending_approval') {
         router.push('/login')
+      } else if (result === 'domain_exists_request_sent') {
+        requestSent.value = true
       }
     }
 
-    return { auth, tenantName, name, email, password, confirmPassword, handleRegister }
+    return { auth, tenantName, name, email, password, confirmPassword, requestSent, handleRegister }
   },
 }
 </script>
@@ -254,5 +262,25 @@ export default {
 
 .auth-footer a:hover {
   text-decoration: underline;
+}
+
+.request-sent-message {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+}
+
+.request-sent-message p {
+  color: #94a3b8;
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+}
+
+.request-sent-message .btn-primary {
+  display: inline-block;
+  text-decoration: none;
+  text-align: center;
 }
 </style>

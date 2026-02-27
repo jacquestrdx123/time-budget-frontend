@@ -24,4 +24,18 @@ export const userService = {
   async delete(id) {
     await api.delete(`/users/${id}`)
   },
+
+  async listJoinRequests() {
+    const response = await api.get('/users/join-requests')
+    return response.data
+  },
+
+  async approveJoinRequest(id) {
+    const response = await api.post(`/users/join-requests/${id}/approve`)
+    return response.data
+  },
+
+  async rejectJoinRequest(id) {
+    await api.post(`/users/join-requests/${id}/reject`)
+  },
 }

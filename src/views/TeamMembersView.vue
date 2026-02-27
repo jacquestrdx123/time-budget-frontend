@@ -20,12 +20,54 @@
         Loading team members...
       </div>
 
-      <div v-else-if="users.length === 0" class="empty-state">
-        <h3>No team members</h3>
-        <p>Only admins can invite new users.</p>
-      </div>
+      <template v-else>
+        <div v-if="auth.isAdmin && joinRequests.length > 0" class="join-requests-section">
+          <h2 class="section-title">Pending join requests</h2>
+          <p class="section-desc">These people requested to join your team. Approve to give them access.</p>
+          <div class="join-requests-table-wrap">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Requested</th>
+                  <th class="th-actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in joinRequests" :key="r.id" class="user-row">
+                  <td>
+                    <span class="user-avatar">{{ initials(r.name) }}</span>
+                    {{ r.name }}
+                  </td>
+                  <td>{{ r.email }}</td>
+                  <td>{{ formatDate(r.created_at) }}</td>
+                  <td class="td-actions">
+                    <button
+                      class="btn-icon btn-activate"
+                      title="Approve"
+                      :disabled="processingRequestId === r.id"
+                      @click="approveRequest(r)"
+                    >{{ processingRequestId === r.id ? '...' : 'Approve' }}</button>
+                    <button
+                      class="btn-icon btn-danger"
+                      title="Reject"
+                      :disabled="processingRequestId === r.id"
+                      @click="rejectRequest(r)"
+                    >Reject</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-      <div v-else class="users-table-wrap">
+        <div v-if="users.length === 0" class="empty-state">
+          <h3>No team members</h3>
+          <p>Only admins can invite new users.</p>
+        </div>
+
+        <div v-else class="users-table-wrap">
         <table class="users-table">
           <thead>
             <tr>
@@ -75,7 +117,8 @@
             </tr>
           </tbody>
         </table>
-      </div>
+        </div>
+      </template>
 
       <!-- Add user modal -->
       <div v-if="showAddModal" class="modal-overlay" @click.self="showAddModal = false">
@@ -169,7 +212,9 @@ export default {
     const toast = useToastStore()
 
     const users = ref([])
+    const joinRequests = ref([])
     const loading = ref(true)
+    const processingRequestId = ref(null)
     const showAddModal = ref(false)
     const showEditModal = ref(false)
     const addSaving = ref(false)
@@ -189,6 +234,54 @@ export default {
         .join('')
         .toUpperCase()
         .slice(0, 2)
+    }
+
+    function formatDate(iso) {
+      if (!iso) return '—'
+      try {
+        const d = new Date(iso)
+        return d.toLocaleDateString(undefined, { dateStyle: 'short' })
+      } catch {
+        return iso
+      }
+    }
+
+    async function loadJoinRequests() {
+      if (!auth.isAdmin) return
+      try {
+        joinRequests.value = await userService.listJoinRequests()
+      } catch {
+        joinRequests.value = []
+      }
+    }
+
+    async function approveRequest(r) {
+      processingRequestId.value = r.id
+      try {
+        await userService.approveJoinRequest(r.id)
+        toast.success(`${r.name} has been added to the team`)
+        await loadUsers()
+        await loadJoinRequests()
+      } catch (err) {
+        const msg = err.response?.data?.detail || 'Failed to approve request'
+        toast.error(msg)
+      } finally {
+        processingRequestId.value = null
+      }
+    }
+
+    async function rejectRequest(r) {
+      processingRequestId.value = r.id
+      try {
+        await userService.rejectJoinRequest(r.id)
+        toast.success('Join request rejected')
+        await loadJoinRequests()
+      } catch (err) {
+        const msg = err.response?.data?.detail || 'Failed to reject request'
+        toast.error(msg)
+      } finally {
+        processingRequestId.value = null
+      }
     }
 
     function canEdit(u) {
@@ -303,12 +396,17 @@ export default {
       }
     }
 
-    onMounted(() => loadUsers())
+    onMounted(async () => {
+      await loadUsers()
+      await loadJoinRequests()
+    })
 
     return {
       auth,
       users,
+      joinRequests,
       loading,
+      processingRequestId,
       showAddModal,
       showEditModal,
       addForm,
@@ -319,11 +417,14 @@ export default {
       userToDelete,
       activatingId,
       initials,
+      formatDate,
       canEdit,
       canDelete,
       openAddModal,
       openEditModal,
       activateUser,
+      approveRequest,
+      rejectRequest,
       confirmDelete,
       submitAdd,
       submitEdit,
@@ -418,6 +519,30 @@ export default {
 .empty-state p {
   color: #94a3b8;
   margin: 0;
+}
+
+.join-requests-section {
+  margin-bottom: 2rem;
+}
+
+.section-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0 0 0.25rem;
+}
+
+.section-desc {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin: 0 0 1rem;
+}
+
+.join-requests-table-wrap {
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .users-table-wrap {

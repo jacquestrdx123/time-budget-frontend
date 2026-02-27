@@ -9,26 +9,26 @@ export const baseNavGroups = [
   {
     label: 'Work',
     items: [
+      { label: 'Shifts', to: '/shifts' },
+      { label: 'Clock ins', to: '/clock-ins' },
+    ],
+  },
+  {
+    label: 'Planning',
+    items: [
       { label: 'Projects', to: '/projects' },
       { label: 'Tasks', to: '/tasks' },
       { label: 'Personal TODO', to: '/personal-todos' },
       { label: 'Planner', to: '/planner' },
       { label: 'Timeline', to: '/timeline' },
-    ],
-  },
-  {
-    label: 'People & Time',
-    items: [
       { label: 'Team Schedule', to: '/team' },
-      { label: 'Team Members', to: '/team/members' },
-      { label: 'Shifts', to: '/shifts' },
-      { label: 'Clock ins', to: '/clock-ins' },
-      { label: 'Reminders', to: '/reminders' },
     ],
   },
   {
     label: 'Account',
     items: [
+      { label: 'Reminders', to: '/reminders' },
+      { label: 'Team Members', to: '/team/members' },
       { label: 'Notifications', to: '/notifications', badge: 'notif' },
       { label: 'Settings', to: '/settings' },
     ],
